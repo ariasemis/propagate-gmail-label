@@ -102,3 +102,7 @@ dist
 
 # TernJS port file
 .tern-port
+
+# GAS & CLASP files
+.clasprc.json
+creds.json

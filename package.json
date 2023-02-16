@@ -1,0 +1,27 @@
+{
+  "name": "propagate-gmail-label",
+  "version": "1.0.0",
+  "description": "google-apps-script for gmail that propagates labels to all messages in a mail thread",
+  "author": "Arias Emilio",
+  "homepage": "https://github.com/ariasemis/propagate-gmail-label#readme",
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ariasemis/propagate-gmail-label.git"
+  },
+  "keywords": [
+    "google-apps-script"
+  ],
+  "bugs": {
+    "url": "https://github.com/ariasemis/propagate-gmail-label/issues"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.57",
+    "typescript": "^3.8.2"
+  }
+}
