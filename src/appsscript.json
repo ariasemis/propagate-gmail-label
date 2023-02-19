@@ -1,5 +1,5 @@
 {
-  "timeZone": "America/New_York",
+  "timeZone": "America/Argentina/Cordoba",
   "dependencies": {
   },
   "exceptionLogging": "STACKDRIVER",
