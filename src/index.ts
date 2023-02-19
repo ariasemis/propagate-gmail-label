@@ -1,14 +1,37 @@
 const run = () => {
-    // TODO: 
-    // retrieve script properties
-    // search for threads
-    // iterate threads
-    // get labels applied to thread
-    // if no labels, continue with next thread
-    // if labels, add them to thread
-    // !! remember to check for dry-run and add logs
+    const runProps = getRunProperties_();
+    if (runProps == null) {
+        Logger.log("run interrupted due to missing configurations");
+        return;
+    }
 
-    Logger.log("not yet implemented...");
+    const { dryRun, pageSize, noLabel } = runProps;
+    const missingLabel = getOrCreateLabel_(noLabel);
+
+    const query = `has:nouserlabels -in:inbox -in:draft -label:${noLabel}`;
+    const threads = GmailApp.search(query, 0, pageSize);
+
+    for (const thread of threads) {
+
+        if (thread.isInInbox()) {
+            Logger.log("thread='%s' is in inbox, skipped", thread.getFirstMessageSubject());
+            continue;
+        }
+        
+        const labels = thread.getLabels();
+        const labelsToAdd = labels.length === 0 ? [ missingLabel ] : labels;
+        
+        if (!dryRun) {
+            for (const label of labelsToAdd) {
+                thread.addLabel(label);
+            }
+        }
+        Logger.log(
+            "thread='%s' was updated with labels %s. (dry-run=%s)", 
+            thread.getFirstMessageSubject(), 
+            labelsToAdd.map(x => x.getName()), 
+            dryRun);
+    }
 }
 
 const install = () => {
@@ -19,26 +42,53 @@ const install = () => {
 const uninstall = () => {
     var triggers = ScriptApp.getProjectTriggers();
 
-    // TODO: can I replace the "for" with a better loop ?
-    // TODO: check function called by trigger matches "run"
     for (let i = 0; i < triggers.length; i++) {
         const trigger = triggers[i];
 
-        // trigger.getHandlerFunction()
-
         ScriptApp.deleteTrigger(trigger);
-        Logger.log("trigger %s deleted", trigger.getUniqueId()); // TODO: review instance is not null here, otherwise move log before deletion
+        Logger.log("trigger %s deleted", trigger.getUniqueId());
     }
 }
 
 // private functions:
 // https://developers.google.com/apps-script/guides/html/communication#private_functions
 
+const getOrCreateLabel_ = (labelName: string) => {
+    let label = GmailApp.getUserLabelByName(labelName);
+    if (!label) {
+        // TODO: when doing a dry-run, we are still creating the label which is not ideal
+        label = GmailApp.createLabel(labelName);
+        Logger.log("%s label created in gmail", labelName);
+    }
+    return label;
+}
+
+const getRunProperties_ = () => {
+    const properties = PropertiesService.getScriptProperties();
+    
+    const runProps = {
+        dryRun: strToBool_(properties.getProperty('DRY_RUN')),
+        pageSize: parseInt(properties.getProperty('MAX_THREADS_PER_RUN')),
+        noLabel: properties.getProperty('NO_LABEL')
+    };
+
+    if (runProps.pageSize == null || isNaN(runProps.pageSize)) {
+        Logger.log("'MAX_THREADS_PER_RUN' property not configured");
+        return null;
+    }
+
+    if (!runProps.noLabel) {
+        Logger.log("'NO_LABEL' property not configured");
+        return null;
+    }
+    
+    return runProps;
+}
+
 const setupTriggers_ = () => {
-    // TODO: check that function called by trigger matches "run"
     var triggers = ScriptApp.getProjectTriggers();
     if (triggers.length > 0) {
-        Logger.log("trigger already configured found, skipping installation");
+        Logger.log("trigger already configured, skipping installation");
         return;
     }
     
@@ -69,7 +119,8 @@ const setupPreferences_ = () => {
     configure('DAYS_BETWEEN_RUNS', '1');
     configure('TIME_OF_DAY_TO_RUN', '5');
     configure('DRY_RUN', 'false');
-    configure('MAX_THREADS_PER_RUN', '100');
+    configure('MAX_THREADS_PER_RUN', '20');
+    configure('NO_LABEL', 'uncategorized');
 }
 
-const strToBool_ = (val: string): boolean => JSON.parse(val);
+const strToBool_ = (val: string): boolean => ["true", "True", "1", "TRUE"].includes(val);
